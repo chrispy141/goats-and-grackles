@@ -1,29 +1,32 @@
-# Project settings
-TARGET = game
-BUILD_DIR = build
-SRC_DIR = src
-
-# Tools
+# Variables
 CL65 = cl65
-X64 = x64
-
-# Config
+CA65 = ca65
 CFG = c64-asm.cfg
-PRG = $(BUILD_DIR)/$(TARGET).prg
-MAIN = $(SRC_DIR)/main.s
+OUTDIR = build
+TARGET = $(OUTDIR)/game.prg
+MAIN_SRC = src/main.s
+MAIN_OBJ = $(OUTDIR)/main.o
+EMU = x64
 
 # Default target
-all: $(PRG)
+all: $(TARGET)
 
-# Build PRG
-$(PRG): $(MAIN)
-	@mkdir -p $(BUILD_DIR)
-	$(CL65) -C $(CFG) -u __EXEHDR__ -o $(PRG) $(MAIN)
+# Build PRG by linking main object and library object
+$(TARGET): $(MAIN_OBJ) | $(OUTDIR)
+	$(CL65) -C $(CFG) -u __EXEHDR__ -o $@ $(MAIN_OBJ) 
 
-# Run in VICE
-run: $(PRG)
-	$(X64) $(PRG)
+# Assemble main.s into build/main.o
+$(MAIN_OBJ): $(MAIN_SRC) | $(OUTDIR)
+	$(CA65) -o $@ $(MAIN_SRC)
 
-# Clean build files
+# Create build directory if missing
+$(OUTDIR):
+	mkdir -p $(OUTDIR)
+
+# Run in VICE emulator
+run: $(TARGET)
+	$(EMU) $(TARGET)
+
+# Clean build artifacts
 clean:
-	rm -rf $(BUILD_DIR)/*.o $(BUILD_DIR)/*.prg
+	rm -f $(OUTDIR)/*

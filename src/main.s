@@ -1,60 +1,89 @@
-        .export _start
+; Assemble: ca65 sprite_demo.asm
+; Link: ld65 -C c64sprite.cfg -o sprite_demo.prg sprite_demo.o -u __EXEHDR__
+
+.segment "ZEROPAGE"
+spriteX: .res 1
+spriteY: .res 1
 
 .segment "CODE"
+.export _start
+
+SPRITE_ADDR = $2000       ; Matches SPRITES memory in .cfg
+SPRITE_PTR  = SPRITE_ADDR / 64  ; VIC-II expects /64 pointer
 
 _start:
-    jsr $E544              ; Clear screen using KERNAL
+    sei                   ; Disable interrupts during setup
+    lda #$93       ; PETSCII code for "clear screen"
+    jsr $ffd2      ; Output via CHROUT
 
-    lda #6                 ; Blue background and border
-    sta $d021              ; background
-    sta $d020              ; border
+    ; Set background and border color (blue)
+    lda #$06
+    sta $d020
+    sta $d021
 
-    ; ---- Fill screen with spaces ----
-    lda #$20               ; PETSCII space
-    ldx #0
-FillScreen:
-    sta $0400,x
-    sta $0500,x
-    sta $0600,x
-    sta $06e8,x
-    inx
-    bne FillScreen
+    ; Enable sprite 0
+    lda #$01
+    sta $d015
 
-    ; ---- Draw vegetation on row 22 ----
-    lda #$2a               ; PETSCII '*'
-    ldx #0
-DrawGrass:
-    sta $0400 + (22*40),x
-    inx
-    cpx #40
-    bne DrawGrass
+    ; Set sprite 0 X/Y position
+    lda #100
+    sta $d000
+    lda #50
+    sta $d001
 
-    ; ---- Draw dirt on row 23 ----
-    lda #$2e               ; PETSCII '.' for dirt
-    ldx #0
-DrawDirt:
-    sta $0400 + (23*40),x
-    inx
-    cpx #40
-    bne DrawDirt
+    ; Set sprite color (yellow)
+    lda #$0e
+    sta $d027
 
-    ; ---- Color vegetation row (green) ----
-    lda #5                 ; green
-    ldx #0
-ColorGrass:
-    sta $d800 + (22*40),x
-    inx
-    cpx #40
-    bne ColorGrass
+    ; Set sprite pointer in $07F8 (sprite 0)
+    lda #SPRITE_PTR
+    sta $07f8
 
-    ; ---- Color dirt row (brown) ----
-    lda #2                 ; brown
-    ldx #0
-ColorDirt:
-    sta $d800 + (23*40),x
-    inx
-    cpx #40
-    bne ColorDirt
+    cli                   ; Re-enable interrupts
 
-Forever:
-    jmp Forever            ; Infinite loop
+print_msg:
+    lda #$0e              ; Switch to lowercase mode
+    jsr $ffd2
+    lda #'s'
+    jsr $ffd2
+    lda #'p'
+    jsr $ffd2
+    lda #'r'
+    jsr $ffd2
+    lda #'i'
+    jsr $ffd2
+    lda #'t'
+    jsr $ffd2
+    lda #'e'
+    jsr $ffd2
+    lda #$0d
+    jsr $ffd2
+
+loop:
+    jmp loop
+
+.segment "SPRITEDATA"
+smiley:
+; 24x21 pixels = 63 bytes per sprite
+    .byte %00011111,%11100000,%00000000
+    .byte %00111111,%11110000,%00000000
+    .byte %01111111,%11111000,%00000000
+    .byte %11111000,%00011111,%00000000
+    .byte %11100111,%11100111,%00000000
+    .byte %11001111,%11110011,%00000000
+    .byte %11011111,%11111011,%00000000
+    .byte %10111100,%00111101,%00000000
+    .byte %10111000,%00011101,%00000000
+    .byte %10111000,%00011101,%00000000
+    .byte %10111100,%00111101,%00000000
+    .byte %10111111,%11111101,%00000000
+    .byte %11011111,%11111011,%00000000
+    .byte %11001111,%11110011,%00000000
+    .byte %11100111,%11100111,%00000000
+    .byte %11111000,%00011111,%00000000
+    .byte %01111111,%11111000,%00000000
+    .byte %00111111,%11110000,%00000000
+    .byte %00011111,%11100000,%00000000
+    .byte %00000000,%00000000,%00000000
+    .byte %00000000,%00000000,%00000000
+    .byte %00000000,%00000000,%00000000
