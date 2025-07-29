@@ -13,7 +13,7 @@ all: $(TARGET)
 
 # Build PRG by linking main object and library object
 $(TARGET): $(MAIN_OBJ) | $(OUTDIR)
-	$(CL65) -C $(CFG) -u __EXEHDR__ -o $@ $(MAIN_OBJ) 
+	$(CL65) -C $(CFG) -o $@ $(MAIN_OBJ) 
 
 # Assemble main.s into build/main.o
 $(MAIN_OBJ): $(MAIN_SRC) | $(OUTDIR)

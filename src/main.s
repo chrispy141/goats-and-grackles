@@ -1,5 +1,13 @@
-; Assemble: ca65 sprite_demo.asm
-; Link: ld65 -C c64sprite.cfg -o sprite_demo.prg sprite_demo.o -u __EXEHDR__
+.segment "EXEHDR"
+    .word next_line
+    .word 10
+    .byte $9e
+    .asciiz "2064"    ; SYS 2064
+next_line:
+    .word 0
+
+SPRITE_ADDR = $2000       ; Matches SPRITES memory in .cfg
+SPRITE_PTR  = SPRITE_ADDR / 64  ; VIC-II expects /64 pointer
 
 .segment "ZEROPAGE"
 spriteX: .res 1
@@ -8,8 +16,7 @@ spriteY: .res 1
 .segment "CODE"
 .export _start
 
-SPRITE_ADDR = $2000       ; Matches SPRITES memory in .cfg
-SPRITE_PTR  = SPRITE_ADDR / 64  ; VIC-II expects /64 pointer
+
 
 _start:
     sei                   ; Disable interrupts during setup
