@@ -48,7 +48,7 @@ copy_sprite_loop:
     ; Set sprite 0 X/Y position
     lda #200
     sta $d000
-    lda #150
+    lda #220
     sta $d001
 
     ; Set sprite color (yellow)
