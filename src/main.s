@@ -16,6 +16,9 @@ tmp: .res 1
 goat_y_hi: .res 1
 goat_y_lo: .res 1
 
+goat_x_low: .res 1
+goat_x_hi: .res 1
+
 .segment "CODE"
 .export _start
 goat_sprite_x = $d000
@@ -48,7 +51,7 @@ clear_loop:
     ; Copy sprite data to $2000 for VIC-II
     ldx #0
 copy_sprite_loop:
-    lda smiley,x
+    lda goat,x
     sta $2000,x
     inx
     cpx #63
@@ -113,11 +116,18 @@ main_loop:
     ldy $d001
 
     lda joystick
+    and #%00010000   ; fire button
+    beq try_jump     ; if 0, button is pressed
+
+    lda joystick
     and #%00000100   ; left
     beq move_left
+
     lda joystick
     and #%00001000   ; right
+
     beq move_right
+
     jsr experiance_gravity
 
 update:
@@ -137,6 +147,24 @@ on_ground:
     lda tmp
     jmp update
 
+try_jump:
+    ; Only allow jump if Y position is at ground level
+    ldy goat_y_hi
+    cpy #220
+    bcc not_on_ground     ; Not on ground (hi < 220), ignore jump
+    cpy #220
+    bne not_on_ground     ; Not exactly on ground
+
+    ; On ground, perform jump!
+    lda #$F8              ; -8 in two's complement (tune as needed)
+    sta verticalSpeed_hi
+    lda #0
+    sta verticalSpeed_lo
+    jmp update
+
+not_on_ground:
+    jsr experiance_gravity
+    
 move_left:
     ;if in high range
     lda SPRITE_HIGH_BITS ; >= 50 check to see if high bit is set
@@ -253,5 +281,5 @@ jump:
     
 ; .include "debug_print.inc"   
 .segment "SPRITEDATA"
-smiley:
+goat:
 .include "sprites/sprite1_frame1.inc"
