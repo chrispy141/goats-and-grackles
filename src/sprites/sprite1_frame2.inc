@@ -1,25 +1,21 @@
-; 24x21 C64 sprite: Smiley face
-; Each byte is a row, leftmost bit is leftmost sprite pixel
-
-.byte $ff, $ff, $ff
-.byte $ff, $ff, $ff
-.byte $ff, $ff, $ff
-.byte $ff, $ff, $ff
-.byte $ff, $ff, $ff
-.byte $ff, $ff, $ff
-.byte $ff, $ff, $ff
-.byte $ff, $ff, $ff
-.byte $ff, $ff, $ff
-.byte $ff, $ff, $ff
-.byte $ff, $ff, $ff
-.byte $ff, $ff, $ff
-.byte $ff, $ff, $ff
-.byte $ff, $ff, $ff
-.byte $ff, $ff, $ff
-.byte $ff, $ff, $ff
-.byte $ff, $ff, $ff
-.byte $ff, $ff, $ff
-.byte $ff, $ff, $ff
-.byte $ff, $ff, $ff
-.byte $ff, $ff, $ff
-.byte $ff, $ff, $ff
+.byte %00000000,%00000000,%00000000
+.byte %00000000,%00000000,%00000000
+.byte %00000011,%11000000,%00000000
+.byte %00000111,%11100000,%00000000
+.byte %00001110,%00110000,%00000000
+.byte %00110110,%00000000,%00000000
+.byte %01111110,%00000000,%00000000
+.byte %01111111,%00000000,%00000000
+.byte %00111111,%10000000,%00000000
+.byte %00100111,%11111111,%11111110
+.byte %00100111,%11111111,%11111011
+.byte %00000111,%11111111,%11111001
+.byte %00000111,%11111111,%11111000
+.byte %00000111,%11111111,%11111000
+.byte %00000111,%11111111,%11110000
+.byte %00000111,%11111111,%11110000
+.byte %00000111,%10111101,%11110000
+.byte %00000101,%10000001,%10110000
+.byte %00000100,%10000001,%10110000
+.byte %00000100,%10000001,%00010000
+.byte %00001101,%10000011,%01110000

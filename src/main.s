@@ -60,9 +60,20 @@ copy_sprite_loop:
     cpx #63
     bcc copy_sprite_loop
 
+    ; Copy second sprite
+    ldx #0
+copy_sprite_2_loop:
+     
+    lda goat_rev,x
+    sta $2040,x
+    inx
+    cpx #63
+    bcc copy_sprite_2_loop
+
     ; Enable sprite 0
     lda #$01
     sta $d015
+
 initialize_sprite:
     ; Set sprite 0 X/Y position
     lda goat_x
@@ -75,9 +86,9 @@ initialize_sprite:
     sta $d027
 
     ; Set sprite pointer in $07F8 (sprite 0)
-    lda #$80
-    sta $07f8
-
+;    lda #$80
+;    sta $07f8
+    jsr forward_goat
     cli                   ; Re-enable interrupts
 ; Set up screen and color memory base addresses
 SCREEN        = $0400      ; C64 default screen RAM
@@ -187,6 +198,7 @@ transition_to_low_range_x:
     sta SPRITE_HIGH_BITS
     jmp dec_x
 dec_x:
+    jsr reverse_goat
     lda goat_x
     sec
     sbc #1
@@ -211,6 +223,7 @@ move_right_low_range:
     jmp inc_x
     
 inc_x:
+    jsr forward_goat
     lda goat_x
     clc
     adc #01
@@ -267,6 +280,16 @@ fall:
 
    jmp update
 
+reverse_goat:
+    ; Set sprite pointer in $07F8 (sprite 0)
+    lda #$81
+    sta $07f8
+    rts
+forward_goat:
+    ; Set sprite pointer in $07F8 (sprite 0)
+    lda #$80
+    sta $07f8
+    rts
 delay:
     ldx #$ff
 wait1:
@@ -292,3 +315,5 @@ ld_wait2:
 .segment "SPRITEDATA"
 goat:
 .include "sprites/sprite1_frame1.inc"
+goat_rev:
+.include "sprites/sprite1_frame2.inc"
