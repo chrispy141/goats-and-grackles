@@ -10,7 +10,8 @@ next_line:
 goat_x: .res 1
 verticalSpeed_lo: .res 1  ; somewhere in zero page
 verticalSpeed_hi: .res 1  ; somewhere in zero page
-horzizontalSpeed: .res 1
+float_left: .res 1
+float_right: .res 1
 tmp: .res 1
 goat_y_hi: .res 1
 goat_y_lo: .res 1
@@ -154,7 +155,6 @@ update:
  
     lda goat_y_hi
     sta goat_sprite_y
-
     jsr delay
 
     jmp main_loop
@@ -178,23 +178,27 @@ can_jump:
     
     lda joystick
     and #%00000100   ; left
-    beq set_hz_spd_left
+    beq set_hz_float_left
 
     lda joystick
     and #%00001000   ; right
-    beq set_hz_spd_right
+    beq set_hz_float_right
     
     
     jmp fall
 
-set_hz_spd_left:
+set_hz_float_left:
+    lda #0
+    sta float_left
     jmp fall
-set_hz_spd_right:
+set_hz_float_right:
+    lda #0
+    sta float_right
     jmp fall
 
 not_on_ground:
     jsr experiance_gravity
-    jmp fall
+    jmp apply_horz_movement
 
 move_left:
     ;if in high range
@@ -283,8 +287,12 @@ on_ground:
     sta verticalSpeed_lo
     lda #220
     sta goat_y_hi
+    lda #0
+    sta float_left
+    sta float_right
     jmp update
-
+apply_horz_movement:
+    jmp fall
 fall:
    jsr experiance_gravity
    ; Add vertical speed to goat's position
@@ -300,7 +308,6 @@ fall:
 
    ldy goat_y_hi
 
-  ; jsr debug_print_speed
 
    jmp update
 
