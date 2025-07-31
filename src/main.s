@@ -15,7 +15,6 @@ horzizontalSpeed: .res 1
 tmp: .res 1
 goat_y_hi: .res 1
 goat_y_lo: .res 1
-fire_was_down: .res 1
 
 .segment "CODE"
 .export _start
@@ -62,7 +61,7 @@ initialize_sprite:
     ; Set sprite 0 X/Y position
     lda #200
     sta $d000
-    lda #120
+    lda #200
     sta $d001
 
     ; Set sprite color (yellow)
@@ -114,19 +113,15 @@ main_loop:
     ldy $d001
 
     lda joystick
-    and #%00010000   ; fire button
-    beq try_jump     ; if 0, button is pressed
-
-    lda joystick
     and #%00000100   ; left
     beq move_left
     lda joystick
     and #%00001000   ; right
     beq move_right
     jsr experiance_gravity
+
 update:
-    jsr fall
-    ldy goat_y_hi
+    jsr fall 
     stx goat_sprite_x
     sty goat_sprite_y
 
@@ -141,22 +136,6 @@ on_ground:
     sta verticalSpeed_lo
     lda tmp
     jmp update
-
-try_jump:
-    ldy goat_y_hi
-    cpy #220
-    bcc not_on_ground   ; Not on or above ground, ignore jump
-
-    ; On or below ground, perform jump!
-    lda #$F8            ; -8 in two's complement (tune as needed)
-    sta verticalSpeed_hi
-    lda #0
-    sta verticalSpeed_lo
-
-    jmp update
-
-not_on_ground:
-    jsr experiance_gravity
 
 move_left:
     ;if in high range
@@ -223,40 +202,28 @@ experiance_gravity:
     sta verticalSpeed_hi
 :
     rts
-; After updating position in fall:
-
-; If falling (verticalSpeed_hi >= 0) AND goat_y_hi >= 220, trigger on_ground
 
 fall:
-    clc
-    lda goat_y_lo
-    adc verticalSpeed_lo
-    sta goat_y_lo
+   ; Add vertical speed to goat's position
+   clc
+   
+;   lda goat_y_vlo
+;   adc verticalSpeed_vlo
+;   sta goat_y_vlo
 
-    lda goat_y_hi
-    adc verticalSpeed_hi
-    sta goat_y_hi
+   lda goat_y_lo
+   adc verticalSpeed_lo
+   sta goat_y_lo
 
-    ; Check for landing
-    lda verticalSpeed_hi
-    bmi no_landing        ; If negative (moving up), skip landing check
+   lda goat_y_hi
+   adc verticalSpeed_hi
+   sta goat_y_hi
 
-    lda goat_y_hi
-    cmp #220
-    bcc no_landing        ; Not at/below ground
+   ldy goat_y_hi
 
-    ; Landed! Clamp to ground and stop falling
-    lda #220
-    sta goat_y_hi
-    lda #0
-    sta goat_y_lo
-    lda #0
-    sta verticalSpeed_hi
-    sta verticalSpeed_lo
-    jmp update
+  ; jsr debug_print_speed
 
-no_landing:
-    rts
+   rts
 
 delay:
     ldx #$ff
@@ -278,7 +245,13 @@ ld_wait2:
     bne ld_wait2
     dex
     bne ld_wait1
-
+jump:
+; To jump, set verticalSpeed to a negative value
+   ; lda #$F8       ; -8 in two's complement
+   ; sta verticalSpeed_hi
+    rts
+    
+; .include "debug_print.inc"   
 .segment "SPRITEDATA"
 smiley:
 .include "sprites/sprite1_frame1.inc"
