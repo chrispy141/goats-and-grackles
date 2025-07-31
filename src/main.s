@@ -7,8 +7,7 @@ next_line:
     .word 0
 
 .segment "ZEROPAGE"
-spriteX: .res 1
-spriteY: .res 1
+goat_x: .res 1
 verticalSpeed_lo: .res 1  ; somewhere in zero page
 verticalSpeed_hi: .res 1  ; somewhere in zero page
 horzizontalSpeed: .res 1
@@ -16,7 +15,6 @@ tmp: .res 1
 goat_y_hi: .res 1
 goat_y_lo: .res 1
 
-goat_x: .res 1
 
 .segment "CODE"
 .export _start
@@ -77,9 +75,9 @@ copy_sprite_2_loop:
 initialize_sprite:
     ; Set sprite 0 X/Y position
     lda goat_x
-    sta $d000
+    sta goat_sprite_x
     lda goat_y_hi
-    sta $d001
+    sta goat_sprite_y
 
     ; Set sprite color (yellow)
     lda #$0e
@@ -171,6 +169,7 @@ can_jump:
 
 not_on_ground:
     jsr experiance_gravity
+    jmp fall
 
 move_left:
     ;if in high range
