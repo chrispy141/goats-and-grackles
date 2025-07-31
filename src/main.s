@@ -16,8 +16,7 @@ tmp: .res 1
 goat_y_hi: .res 1
 goat_y_lo: .res 1
 
-goat_x_low: .res 1
-goat_x_hi: .res 1
+goat_x: .res 1
 
 .segment "CODE"
 .export _start
@@ -33,6 +32,9 @@ _start:
     sei                   ; Disable interrupts during setup
 
     ; clear screen
+    lda #120
+    sta goat_x
+    sta goat_y_hi
     ldx #$00
 clear_loop:
     lda #$20
@@ -62,9 +64,9 @@ copy_sprite_loop:
     sta $d015
 initialize_sprite:
     ; Set sprite 0 X/Y position
-    lda #200
+    lda goat_x
     sta $d000
-    lda #200
+    lda goat_y_hi
     sta $d001
 
     ; Set sprite color (yellow)
@@ -112,8 +114,8 @@ COLOR_GREEN   = $05        ; Green (C64 color code)
         jmp main_loop
 
 main_loop:
-    ldx $d000
-    ldy $d001
+    ;ldx $d000
+    ;ldy $d001
 
     lda joystick
     and #%00010000   ; fire button
@@ -129,9 +131,10 @@ main_loop:
     beq move_right
 
     jsr experiance_gravity
-
+    jmp fall
 update:
-    jsr fall 
+    ldy goat_y_hi
+    ldx goat_x
     stx goat_sprite_x
     sty goat_sprite_y
 
@@ -139,32 +142,32 @@ update:
 
     jmp main_loop
 
-on_ground:
-    sta tmp
-    lda #0
-    sta verticalSpeed_hi
-    sta verticalSpeed_lo
-    lda tmp
-    jmp update
+
 
 try_jump:
-    ; Only allow jump if Y position is at ground level
     ldy goat_y_hi
     cpy #220
-    bcc not_on_ground     ; Not on ground (hi < 220), ignore jump
-    cpy #220
-    bne not_on_ground     ; Not exactly on ground
+    beq can_jump        ; goat_y_hi == 220: jump allowed
+    bcc not_on_ground   ; goat_y_hi < 220: not on ground, can't jump
 
+    ; goat_y_hi > 220: snap to ground, do NOT jump
+    lda #220
+    sta goat_y_hi
+    lda #0
+    sta goat_y_lo
+    jmp update
+
+can_jump:
     ; On ground, perform jump!
     lda #$F8              ; -8 in two's complement (tune as needed)
     sta verticalSpeed_hi
     lda #0
     sta verticalSpeed_lo
-    jmp update
+    jmp fall
 
 not_on_ground:
     jsr experiance_gravity
-    
+
 move_left:
     ;if in high range
     lda SPRITE_HIGH_BITS ; >= 50 check to see if high bit is set
@@ -172,12 +175,14 @@ move_left:
     beq move_left_low_range ; high range not set, jump to low range
     jmp move_left_high_range
 move_left_low_range:
+    ldx goat_x
     cpx #25             ; compare to minimum X boundary (adjust 10 as needed)
     bcc update  ; if less than 10, skip decrement (already at left edge)
     jmp dec_x
 
 move_left_high_range:
     ; check if low range is zero
+    ldx goat_x
     cpx #$0
     beq transition_to_low_range_x
     ; low range is not zero, decrement and continue
@@ -189,17 +194,22 @@ transition_to_low_range_x:
     sta SPRITE_HIGH_BITS
     jmp dec_x
 dec_x:
-    dex
-    jmp update
+    lda goat_x
+    sec
+    sbc #1
+    sta goat_x 
+    jmp fall
 move_right:
-    cpx #65  ;check to see if greater than 50
+    lda goat_x
+    cmp #65  ;check to see if greater than 50
     bcc inc_x ; less than 50, safe to increment in all cases
     lda SPRITE_HIGH_BITS ; >= 50 check to see if high bit is set
     and #GOAT_SPRITE_HIGH_BIT
     beq move_right_low_range  ;high bit was not set, continue low range
     ; high bit is set, and x >= 50, don't do anything, go back to update
-    jmp update
+    jmp fall
 move_right_low_range:
+    ldx goat_x
     cpx #255 ; see if current x value is 255
     bcc inc_x  ; if x < 255, skip to increment`
     lda SPRITE_HIGH_BITS
@@ -208,11 +218,15 @@ move_right_low_range:
     jmp inc_x
     
 inc_x:
-    inx
-    jmp update
+    lda goat_x
+    clc
+    adc #01
+    sta goat_x
+    jmp fall
 
 experiance_gravity:
-    cpy #220
+    lda goat_y_hi
+    cmp #220
     bcs on_ground
     clc
 
@@ -231,14 +245,18 @@ experiance_gravity:
 :
     rts
 
+on_ground:
+    sta tmp
+    lda #0
+    sta verticalSpeed_hi
+    sta verticalSpeed_lo
+    lda tmp
+    jmp update
+
 fall:
    ; Add vertical speed to goat's position
    clc
    
-;   lda goat_y_vlo
-;   adc verticalSpeed_vlo
-;   sta goat_y_vlo
-
    lda goat_y_lo
    adc verticalSpeed_lo
    sta goat_y_lo
@@ -251,7 +269,7 @@ fall:
 
   ; jsr debug_print_speed
 
-   rts
+   jmp update
 
 delay:
     ldx #$ff
@@ -273,11 +291,6 @@ ld_wait2:
     bne ld_wait2
     dex
     bne ld_wait1
-jump:
-; To jump, set verticalSpeed to a negative value
-   ; lda #$F8       ; -8 in two's complement
-   ; sta verticalSpeed_hi
-    rts
     
 ; .include "debug_print.inc"   
 .segment "SPRITEDATA"
