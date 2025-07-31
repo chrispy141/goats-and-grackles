@@ -124,10 +124,9 @@ COLOR_GREEN   = $05        ; Green (C64 color code)
         jmp main_loop
 
 main_loop:
-
-    lda joystick
-    and #%00010000   ; fire button
-    beq try_jump     ; if 0, button is pressed
+    lda goat_y_hi
+    cmp #220
+    bcc check_jump 
 
     lda joystick
     and #%00000100   ; left
@@ -136,6 +135,11 @@ main_loop:
     lda joystick
     and #%00001000   ; right
     beq move_right
+check_jump:
+
+    lda joystick
+    and #%00010000   ; fire button
+    beq try_jump     ; if 0, button is pressed
 
     jmp fall
 update:
@@ -145,7 +149,7 @@ update:
     lda goat_y_hi
     sta goat_sprite_y
 
-    jsr delay
+    jsr long_delay
 
     jmp main_loop
 
