@@ -26,15 +26,16 @@ joystick = $dc00
 SPRITE_HIGH_BITS = $d010
 GOAT_SPRITE_HIGH_BIT = $1
 GRAVITY_HI = $00
-GRAVITY_LO = $01  ; try $01, $02, or $04 for different effects
+GRAVITY_LO = $a0  ; try $01, $02, or $04 for different effects
 
 _start:
     sei                   ; Disable interrupts during setup
-
-    ; clear screen
+    ; initialze variables
     lda #120
     sta goat_x
     sta goat_y_hi
+    
+;clear screen loop
     ldx #$00
 clear_loop:
     lda #$20
@@ -114,8 +115,6 @@ COLOR_GREEN   = $05        ; Green (C64 color code)
         jmp main_loop
 
 main_loop:
-    ;ldx $d000
-    ;ldy $d001
 
     lda joystick
     and #%00010000   ; fire button
@@ -127,34 +126,25 @@ main_loop:
 
     lda joystick
     and #%00001000   ; right
-
     beq move_right
 
-    jsr experiance_gravity
     jmp fall
 update:
-    ldy goat_y_hi
-    ldx goat_x
-    stx goat_sprite_x
-    sty goat_sprite_y
+    lda goat_x
+    sta goat_sprite_x
+ 
+    lda goat_y_hi
+    sta goat_sprite_y
 
     jsr delay
 
     jmp main_loop
-
-
 
 try_jump:
     ldy goat_y_hi
     cpy #220
     beq can_jump        ; goat_y_hi == 220: jump allowed
     bcc not_on_ground   ; goat_y_hi < 220: not on ground, can't jump
-
-    ; goat_y_hi > 220: snap to ground, do NOT jump
-    lda #220
-    sta goat_y_hi
-    lda #0
-    sta goat_y_lo
     jmp update
 
 can_jump:
@@ -163,6 +153,9 @@ can_jump:
     sta verticalSpeed_hi
     lda #0
     sta verticalSpeed_lo
+    lda #219
+    sta goat_y_hi
+    sta goat_sprite_y
     jmp fall
 
 not_on_ground:
@@ -175,15 +168,15 @@ move_left:
     beq move_left_low_range ; high range not set, jump to low range
     jmp move_left_high_range
 move_left_low_range:
-    ldx goat_x
-    cpx #25             ; compare to minimum X boundary (adjust 10 as needed)
+    lda goat_x
+    cmp #25             ; compare to minimum X boundary (adjust 10 as needed)
     bcc update  ; if less than 10, skip decrement (already at left edge)
     jmp dec_x
 
 move_left_high_range:
     ; check if low range is zero
-    ldx goat_x
-    cpx #$0
+    lda goat_x
+    cmp #$0
     beq transition_to_low_range_x
     ; low range is not zero, decrement and continue
     jmp dec_x
@@ -209,8 +202,8 @@ move_right:
     ; high bit is set, and x >= 50, don't do anything, go back to update
     jmp fall
 move_right_low_range:
-    ldx goat_x
-    cpx #255 ; see if current x value is 255
+    lda goat_x
+    cmp #255 ; see if current x value is 255
     bcc inc_x  ; if x < 255, skip to increment`
     lda SPRITE_HIGH_BITS
     eor #GOAT_SPRITE_HIGH_BIT
@@ -237,23 +230,26 @@ experiance_gravity:
     lda verticalSpeed_hi
     adc #GRAVITY_HI
     sta verticalSpeed_hi
-
+    
+    lda verticalSpeed_hi
+    bmi not_terminal_veloicty
     cmp #4
-    bcc :+
+    bcc not_terminal_veloicty
     lda #4      ; clamp to terminal velocity
     sta verticalSpeed_hi
-:
+not_terminal_veloicty:
     rts
 
 on_ground:
-    sta tmp
     lda #0
     sta verticalSpeed_hi
     sta verticalSpeed_lo
-    lda tmp
+    lda #220
+    sta goat_y_hi
     jmp update
 
 fall:
+   jsr experiance_gravity
    ; Add vertical speed to goat's position
    clc
    
@@ -274,7 +270,7 @@ fall:
 delay:
     ldx #$ff
 wait1:
-    ldy #$08
+    ldy #$0a
 wait2:
     dey
     bne wait2
@@ -285,13 +281,13 @@ wait2:
 long_delay:
     ldx #$ff
 ld_wait1:
-    ldy #$ff
+    ldy #$8f
 ld_wait2:
     dey
     bne ld_wait2
     dex
     bne ld_wait1
-    
+    rts 
 ; .include "debug_print.inc"   
 .segment "SPRITEDATA"
 goat:
