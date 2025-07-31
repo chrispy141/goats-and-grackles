@@ -124,24 +124,30 @@ COLOR_GREEN   = $05        ; Green (C64 color code)
         jmp main_loop
 
 main_loop:
-    lda goat_y_hi
-    cmp #220
-    bcc check_jump 
-
-    lda joystick
-    and #%00000100   ; left
-    beq move_left
-
-    lda joystick
-    and #%00001000   ; right
-    beq move_right
-check_jump:
-
     lda joystick
     and #%00010000   ; fire button
     beq try_jump     ; if 0, button is pressed
 
+    lda goat_y_hi    ; if the goat isn't on the ground, don't bother left/right
+    cmp #220   
+    bcc brch_fall 
+
+    lda joystick
+    and #%00000100   ; left
+    beq brch_move_left
+
+    lda joystick
+    and #%00001000   ; right
+    beq brch_move_right
+
     jmp fall
+    
+brch_move_left:
+    jmp move_left    
+brch_move_right:
+    jmp move_right    
+brch_fall:
+    jmp fall    
 update:
     lda goat_x
     sta goat_sprite_x
@@ -149,7 +155,7 @@ update:
     lda goat_y_hi
     sta goat_sprite_y
 
-    jsr long_delay
+    jsr delay
 
     jmp main_loop
 
@@ -169,6 +175,21 @@ can_jump:
     lda #219
     sta goat_y_hi
     sta goat_sprite_y
+    
+    lda joystick
+    and #%00000100   ; left
+    beq set_hz_spd_left
+
+    lda joystick
+    and #%00001000   ; right
+    beq set_hz_spd_right
+    
+    
+    jmp fall
+
+set_hz_spd_left:
+    jmp fall
+set_hz_spd_right:
     jmp fall
 
 not_on_ground:
@@ -296,7 +317,7 @@ forward_goat:
 delay:
     ldx #$ff
 wait1:
-    ldy #$0a
+    ldy #$0f
 wait2:
     dey
     bne wait2
