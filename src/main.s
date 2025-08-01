@@ -150,6 +150,8 @@ arrival:
     lda #0
     sta goat_y_lo
     ldx #0
+    lda #1
+    sta facing_forward
     jsr delay
 arrival_loop:
     lda goat_x 
@@ -187,7 +189,12 @@ main_loop:
     and #%00000010   ; down
     beq brch_munch
 
-    jmp fall
+    ; reset forward/backwards goat
+    lda facing_forward
+    cmp #1
+    beq brc_forward_goat
+    jmp brc_reverse_goat
+
     
 brch_move_left:
     jmp move_left    
@@ -205,6 +212,15 @@ brch_munch:
     jmp munch_left
 br_munch_right:
     jmp munch_right
+    
+brc_forward_goat:
+    jsr forward_goat
+    jmp fall
+
+brc_reverse_goat:
+    jsr reverse_goat
+    jmp fall
+
 update:
     lda goat_x
     sta goat_sprite_x
@@ -240,9 +256,6 @@ can_jump:
     and #%00001000   ; right
     beq set_hz_float_right
     
-    
-    jmp fall
-
 set_hz_float_left:
     lda #1
     sta float_left
@@ -258,6 +271,8 @@ not_on_ground:
     jmp apply_horz_movement
 
 move_left:
+    lda #0
+    sta facing_forward
     jsr move_left_inc
     lda float_left
     cmp #1
@@ -302,6 +317,8 @@ dec_x:
     sta goat_x 
     rts
 move_right:
+    lda #1
+    sta facing_forward
     jsr move_right_inc
     lda float_right
     cmp #1
@@ -416,25 +433,21 @@ reverse_goat:
     ; Set sprite pointer in $07F8 (sprite 0)
     lda #$81
     sta $07f8
-    lda #0
-    sta facing_forward
     rts
 forward_goat:
     ; Set sprite pointer in $07F8 (sprite 0)
     lda #$80
     sta $07f8
-    lda #1
-    sta facing_forward
     rts
 
 munch_left:
     lda #$83
     sta $07f8
-
+    rts
 munch_right:    
     lda #$82
     sta $07f8
-    
+    rts
     
 delay:
     ldx #$ff
