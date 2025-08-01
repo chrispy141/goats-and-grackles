@@ -32,7 +32,7 @@ SPRITE_HIGH_BITS = $d010
 GOAT_SPRITE_HIGH_BIT = $1
 GRAVITY_HI = $00
 GRAVITY_LO = $a0  ; try $01, $02, or $04 for different effects
-veg_hardiness = 25
+veg_hardiness = 64 
 veg_state = $1fd8 ; tracks how much each vegitation character has been munched.
 
 _start:
@@ -117,7 +117,8 @@ SCREEN        = $0400      ; C64 default screen RAM
 COLOR_RAM     = $D800      ; C64 color RAM
 
 CHAR_DIRT     = $C5        ; PETSCII code for '-'
-CHAR_VEG      = $D8        ; PETSCII code for '*'
+CHAR_VEG      = $C1        ; PETSCII code for '*'
+CHAR_VEG_MCHD = $D8        ; PETSCII code for '*'
 COLOR_BROWN   = $09        ; Brown (C64 color code)
 COLOR_GREEN   = $05        ; Green (C64 color code)
 
@@ -501,20 +502,35 @@ calc_veg_cont:
 
 
 draw_vegetation:
+    ; Compute threshold = veg_hardiness / 2
+    lda #veg_hardiness
+    lsr                      ; Divide by 2
+    sta threshold            ; Save for comparison
     ldx #0
 @veg_loop:
     lda veg_state,x
-    beq @clear_char           ; If 0, clear cell
-    lda #CHAR_VEG             ; Else draw vegetation char
+    beq @clear_char          ; If 0, clear cell
+
+    cmp threshold
+    bcc @draw_mched          ; If veg_state < threshold → use CHAR_VEG_MCHD
+
+    ; Draw main vegetation char
+    lda #CHAR_VEG
+    jmp @draw_char
+
+@draw_mched:
+    lda #CHAR_VEG_MCHD
+
+@draw_char:
     sta SCREEN + 23*40,x
     lda #COLOR_GREEN
     sta COLOR_RAM + 23*40,x
     jmp @next
 
 @clear_char:
-    lda #$20                  ; Space (blank)
+    lda #$20                 ; Space
     sta SCREEN + 23*40,x
-    lda #$01                  ; Color = white or background color
+    lda #$01                 ; White or background color
     sta COLOR_RAM + 23*40,x
 
 @next:
@@ -522,6 +538,9 @@ draw_vegetation:
     cpx #40
     bne @veg_loop
     rts
+
+threshold: .byte 0           ; Temporary storage
+
     
 delay:
     ldx #$ff
