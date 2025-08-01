@@ -1,3 +1,5 @@
+; Fix for goat getting stuck when jumping near left edge
+
 .segment "EXEHDR"
     .word next_line
     .word 10
@@ -84,8 +86,6 @@ initialize_sprite:
     jsr goat_gray
 
     ; Set sprite pointer in $07F8 (sprite 0)
-;    lda #$80
-;    sta $07f8
     jsr forward_goat
     cli                   ; Re-enable interrupts
 ; Set up screen and color memory base addresses
@@ -147,9 +147,8 @@ brch_move_left:
 brch_move_right:
     jmp move_right    
 brch_fall:
-
     jmp apply_horz_movement
-   ; jmp fall    
+   
 update:
     lda goat_x
     sta goat_sprite_x
@@ -221,8 +220,10 @@ move_left_inc:
 move_left_low_range:
     lda goat_x
     cmp #25             ; compare to minimum X boundary (adjust 10 as needed)
-    bcc update  ; if less than 10, skip decrement (already at left edge)
+    bcc skip_x_dec      ; if less than 25, skip decrement but continue execution
     jmp dec_x
+skip_x_dec:
+    rts                 ; Return without changing X position
 
 move_left_high_range:
     ; check if low range is zero
@@ -245,6 +246,16 @@ dec_x:
     sta goat_x 
     rts
 move_right:
+    jsr move_right_inc
+    lda float_right
+    cmp #1
+    beq move_right_jmp 
+    jmp fall
+move_right_jmp:
+    jsr move_right_inc
+    jsr move_right_inc
+    jmp fall
+move_right_inc:
     lda goat_x
     cmp #65  ;check to see if greater than 50
     bcc inc_x ; less than 50, safe to increment in all cases
@@ -268,7 +279,7 @@ inc_x:
     clc
     adc #01
     sta goat_x
-    jmp fall
+    rts
 
 experiance_gravity:
     lda goat_y_hi
@@ -331,7 +342,18 @@ fall:
    sta goat_y_hi
 
    ldy goat_y_hi
+   cpy #220      ; Check if we're at or below ground level
+   bcs landing   ; If so, handle landing
+   jmp update    ; Otherwise continue
 
+landing:
+   lda #220      ; Make sure we're exactly at ground level
+   sta goat_y_hi
+   lda #0        ; Reset vertical speed
+   sta verticalSpeed_hi
+   sta verticalSpeed_lo
+   sta float_left
+   sta float_right
    jmp update
 
 reverse_goat:
@@ -386,6 +408,10 @@ goat_white:
     rts
 .segment "SPRITEDATA"
 goat:
-.include "sprites/sprite1_frame1.inc"
+.include "sprites/goat_walk_right.inc"
 goat_rev:
-.include "sprites/sprite1_frame2.inc"
+.include "sprites/goat_walk_left.inc"
+munch:
+.include "sprites/goat_munch_right.inc"
+munch_rev:
+.include "sprites/goat_munch_left.inc"
