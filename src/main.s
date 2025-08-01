@@ -143,16 +143,7 @@ initialize_vegitation:
     bne @dirt_loop
 
 ; Fill row above last (row 23) with VEGETATION 
-    ldy #0
-@veg_loop:
-    lda #CHAR_VEG
-    sta SCREEN + 23*40,y
-    lda #COLOR_GREEN
-    sta COLOR_RAM + 23*40,y
-    iny
-    cpy #40
-    bne @veg_loop
-
+    jsr draw_vegetation
 arrival:
     lda #0
     sta goat_x
@@ -182,7 +173,10 @@ arrival_loop:
     bne arrival_loop
 
 main_loop:
-
+    jsr draw_vegetation
+    jsr calc_veg_index
+    lda veg_state,x
+    sta $d027
     lda joystick
     and #%00010000   ; fire button
     beq try_jump     ; if 0, button is pressed
@@ -480,14 +474,48 @@ munch_done:
     jmp fall
 ; Calculates the vegitation char index based on where the goat is.
 ; Saves the calculated value in the x register.
+
+; Calculate vegetation index for sprite 0
+; Reads from $d000 (sprite X low) and $d010 (MSB for all sprites)
+; Output:
+;   X = vegetation index (0–39)
+
 calc_veg_index:
-    lda goat_x      ; Low byte
-    lsr             ; >> 1
-    lsr             ; >> 2
-    lsr             ; >> 3 (divide by 8)
-    tax             ; Result into X
+    lda SPRITE_HIGH_BITS           ; Read MSB register
+    and #%00000001      ; Isolate bit for sprite 0
+    lsr                 ; Move bit into carry
+    lda $d000           ; Low 8 bits of sprite X
+    ror                 ; Rotate carry into bit 7
+    lsr                 ; Divide by 8
+    lsr
+    tax
     rts
 
+
+
+draw_vegetation:
+    ldx #0
+@veg_loop:
+    lda veg_state,x
+    beq @clear_char           ; If 0, clear cell
+    lda #CHAR_VEG             ; Else draw vegetation char
+    sta SCREEN + 23*40,x
+    lda #COLOR_GREEN
+    sta COLOR_RAM + 23*40,x
+    jmp @next
+
+@clear_char:
+    lda #$20                  ; Space (blank)
+    sta SCREEN + 23*40,x
+    lda #$01                  ; Color = white or background color
+    sta COLOR_RAM + 23*40,x
+
+@next:
+    inx
+    cpx #40
+    bne @veg_loop
+    rts
+    
 delay:
     ldx #$ff
 wait1:
