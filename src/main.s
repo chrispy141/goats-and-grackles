@@ -80,9 +80,8 @@ initialize_sprite:
     lda goat_y_hi
     sta goat_sprite_y
 
-    ; Set sprite color (yellow)
-    lda #$0e
-    sta $d027
+    ; Set sprite color (gray)
+    jsr goat_gray
 
     ; Set sprite pointer in $07F8 (sprite 0)
 ;    lda #$80
@@ -188,11 +187,11 @@ can_jump:
     jmp fall
 
 set_hz_float_left:
-    lda #0
+    lda #1
     sta float_left
     jmp fall
 set_hz_float_right:
-    lda #0
+    lda #1
     sta float_right
     jmp fall
 
@@ -230,6 +229,8 @@ dec_x:
     lda goat_x
     sec
     sbc #1
+    sbc float_left
+    sbc float_left
     sta goat_x 
     jmp fall
 move_right:
@@ -255,6 +256,8 @@ inc_x:
     lda goat_x
     clc
     adc #01
+    adc float_right
+    adc float_right
     sta goat_x
     jmp fall
 
@@ -292,7 +295,20 @@ on_ground:
     sta float_right
     jmp update
 apply_horz_movement:
+    lda float_left
+    cmp #01
+    beq apply_float_left
+    lda float_right
+    sta $d027
+    cmp #01
+    beq apply_float_right
     jmp fall
+    
+apply_float_left:
+    jmp move_left
+apply_float_right:
+    jmp move_right
+
 fall:
    jsr experiance_gravity
    ; Add vertical speed to goat's position
@@ -307,7 +323,6 @@ fall:
    sta goat_y_hi
 
    ldy goat_y_hi
-
 
    jmp update
 
@@ -341,8 +356,26 @@ ld_wait2:
     bne ld_wait2
     dex
     bne ld_wait1
-    rts 
-; .include "debug_print.inc"   
+    rts
+    
+goat_green: 
+    lda #$05
+    sta $d027
+    rts
+
+goat_red: 
+    lda #$02
+    sta $d027
+    rts
+
+goat_gray: 
+    lda #$0f
+    sta $d027
+    rts
+goat_white: 
+    lda #$01
+    sta $d027
+    rts
 .segment "SPRITEDATA"
 goat:
 .include "sprites/sprite1_frame1.inc"
