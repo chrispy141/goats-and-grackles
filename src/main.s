@@ -18,6 +18,9 @@ tmp: .res 1
 goat_y_hi: .res 1
 goat_y_lo: .res 1
 facing_forward: .res 1
+.segment "BSS"       ; Or .segment "DATA" if using KickAssembler
+
+
 
 
 .segment "CODE"
@@ -29,6 +32,8 @@ SPRITE_HIGH_BITS = $d010
 GOAT_SPRITE_HIGH_BIT = $1
 GRAVITY_HI = $00
 GRAVITY_LO = $a0  ; try $01, $02, or $04 for different effects
+veg_hardiness = 25
+veg_state = $1fd8 ; tracks how much each vegitation character has been munched.
 
 _start:
     sei                   ; Disable interrupts during setup
@@ -116,8 +121,16 @@ CHAR_VEG      = $D8        ; PETSCII code for '*'
 COLOR_BROWN   = $09        ; Brown (C64 color code)
 COLOR_GREEN   = $05        ; Green (C64 color code)
 
-    ldx #0
 
+    ldx #0
+initialize_vegitation:
+    lda #veg_hardiness
+    sta veg_state,x
+    inx
+    cpx #40
+    bne initialize_vegitation
+
+    ldx #0
 ; Fill last row (row 24) with DIRT ('-')
     ldy #0
 @dirt_loop:
@@ -129,7 +142,7 @@ COLOR_GREEN   = $05        ; Green (C64 color code)
     cpy #40
     bne @dirt_loop
 
-; Fill row above last (row 23) with VEGETATION ('*')
+; Fill row above last (row 23) with VEGETATION 
     ldy #0
 @veg_loop:
     lda #CHAR_VEG
@@ -169,6 +182,7 @@ arrival_loop:
     bne arrival_loop
 
 main_loop:
+
     lda joystick
     and #%00010000   ; fire button
     beq try_jump     ; if 0, button is pressed
@@ -442,13 +456,38 @@ forward_goat:
 
 munch_left:
     lda #$83
-    sta $07f8
-    rts
+    sta $07f8          ; Set sprite pointer? (Your code does this first)
+    jsr calc_veg_index ; X = vegetation index
+    lda veg_state,x
+    beq munch_done           ; If already 0, skip
+    sec
+    sbc #1             ; Subtract 1
+    sta veg_state,x
+    
+    jmp fall
 munch_right:    
     lda #$82
     sta $07f8
-    rts
+    jsr calc_veg_index
+    lda veg_state,x
+    beq munch_done
+    sec
+    sbc #1
+    sta veg_state,x
+    jmp fall
     
+munch_done:
+    jmp fall
+; Calculates the vegitation char index based on where the goat is.
+; Saves the calculated value in the x register.
+calc_veg_index:
+    lda goat_x      ; Low byte
+    lsr             ; >> 1
+    lsr             ; >> 2
+    lsr             ; >> 3 (divide by 8)
+    tax             ; Result into X
+    rts
+
 delay:
     ldx #$ff
 wait1:
