@@ -147,7 +147,9 @@ brch_move_left:
 brch_move_right:
     jmp move_right    
 brch_fall:
-    jmp fall    
+
+    jmp apply_horz_movement
+   ; jmp fall    
 update:
     lda goat_x
     sta goat_sprite_x
@@ -189,6 +191,7 @@ can_jump:
 set_hz_float_left:
     lda #1
     sta float_left
+    
     jmp fall
 set_hz_float_right:
     lda #1
@@ -229,8 +232,6 @@ dec_x:
     lda goat_x
     sec
     sbc #1
-    sbc float_left
-    sbc float_left
     sta goat_x 
     jmp fall
 move_right:
@@ -256,8 +257,6 @@ inc_x:
     lda goat_x
     clc
     adc #01
-    adc float_right
-    adc float_right
     sta goat_x
     jmp fall
 
@@ -299,7 +298,6 @@ apply_horz_movement:
     cmp #01
     beq apply_float_left
     lda float_right
-    sta $d027
     cmp #01
     beq apply_float_right
     jmp fall
