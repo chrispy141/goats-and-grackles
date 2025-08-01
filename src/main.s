@@ -31,6 +31,7 @@ GRAVITY_LO = $a0  ; try $01, $02, or $04 for different effects
 VEG_HARDINESS = 64 
 ARRAY_VEG_STATE = $1fd8 ; tracks how much each vegitation character has been munched.
 COLOR_BLUE = $06
+COLOR_BLACK = $00
 _start:
     sei                   ; Disable interrupts during setup
     ; initialze variables
@@ -53,8 +54,9 @@ clear_loop:
     bne clear_loop
 
     ; Set background and border color (blue)
-    lda #COLOR_BLUE
+    lda #COLOR_BLACK
     sta $d020
+    lda #COLOR_BLUE
     sta $d021
 
     ; Copy sprite data to $2000 for VIC-II
@@ -257,6 +259,8 @@ can_jump:
     lda PTR_JOYSTICK
     and #%00001000   ; right
     beq set_hz_var_float_right
+
+    jmp clear_hz_var_float 
     
 set_hz_var_float_left:
     lda #1
@@ -267,7 +271,11 @@ set_hz_var_float_right:
     lda #1
     sta var_float_right
     jmp fall
-
+clear_hz_var_float:
+    lda #0
+    sta var_float_left
+    sta var_float_right
+    jmp fall
 not_on_ground:
     jsr experiance_gravity
     jmp apply_horz_movement
