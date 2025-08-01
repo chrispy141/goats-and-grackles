@@ -34,7 +34,7 @@ GRAVITY_HI = $00
 GRAVITY_LO = $a0  ; try $01, $02, or $04 for different effects
 veg_hardiness = 64 
 veg_state = $1fd8 ; tracks how much each vegitation character has been munched.
-
+COLOR_BLUE = $06
 _start:
     sei                   ; Disable interrupts during setup
     ; initialze variables
@@ -57,7 +57,7 @@ clear_loop:
     bne clear_loop
 
     ; Set background and border color (blue)
-    lda #$06
+    lda #COLOR_BLUE
     sta $d020
     sta $d021
 
@@ -116,9 +116,9 @@ initialize_sprite:
 SCREEN        = $0400      ; C64 default screen RAM
 COLOR_RAM     = $D800      ; C64 color RAM
 
-CHAR_DIRT     = $C5        ; PETSCII code for '-'
-CHAR_VEG      = $C1        ; PETSCII code for '*'
-CHAR_VEG_MCHD = $D8        ; PETSCII code for '*'
+CHAR_DIRT     = $C6        ; PETSCII code for '-'
+CHAR_VEG      = $41        ; PETSCII code for 'spade'
+CHAR_VEG_MCHD = $58        ; PETSCII code for 'spade with hole'
 COLOR_BROWN   = $09        ; Brown (C64 color code)
 COLOR_GREEN   = $05        ; Green (C64 color code)
 
@@ -500,21 +500,23 @@ calc_veg_cont:
     rts
 
 
+; Set screen background color once at program start (not every loop)
+    lda #COLOR_BLUE
+    sta $d021         ; Set global background color to blue
 
 draw_vegetation:
-    ; Compute threshold = veg_hardiness / 2
     lda #veg_hardiness
-    lsr                      ; Divide by 2
-    sta threshold            ; Save for comparison
+    lsr               ; veg_hardiness / 2
+    sta threshold
+
     ldx #0
 @veg_loop:
     lda veg_state,x
-    beq @clear_char          ; If 0, clear cell
+    beq @clear_char           ; If zero, clear cell
 
     cmp threshold
-    bcc @draw_mched          ; If veg_state < threshold → use CHAR_VEG_MCHD
+    bcc @draw_mched           ; If less than threshold, draw damaged char
 
-    ; Draw main vegetation char
     lda #CHAR_VEG
     jmp @draw_char
 
@@ -523,14 +525,14 @@ draw_vegetation:
 
 @draw_char:
     sta SCREEN + 23*40,x
-    lda #COLOR_GREEN
+    lda #COLOR_GREEN           ; Foreground = green for character pixels (the “black” bits)
     sta COLOR_RAM + 23*40,x
     jmp @next
 
 @clear_char:
-    lda #$20                 ; Space
+    lda #$20                  ; Space character
     sta SCREEN + 23*40,x
-    lda #$01                 ; White or background color
+    lda #COLOR_BLUE           ; Foreground same as background so it looks blank
     sta COLOR_RAM + 23*40,x
 
 @next:
@@ -539,7 +541,7 @@ draw_vegetation:
     bne @veg_loop
     rts
 
-threshold: .byte 0           ; Temporary storage
+threshold: .byte 0
 
     
 delay:
