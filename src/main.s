@@ -174,9 +174,6 @@ arrival_loop:
 
 main_loop:
     jsr draw_vegetation
-    jsr calc_veg_index
-    lda veg_state,x
-    sta $d027
     lda joystick
     and #%00010000   ; fire button
     beq try_jump     ; if 0, button is pressed
@@ -481,14 +478,24 @@ munch_done:
 ;   X = vegetation index (0–39)
 
 calc_veg_index:
+
     lda SPRITE_HIGH_BITS           ; Read MSB register
     and #%00000001      ; Isolate bit for sprite 0
     lsr                 ; Move bit into carry
-    lda $d000           ; Low 8 bits of sprite X
+    lda goat_x           ; Low 8 bits of sprite X
     ror                 ; Rotate carry into bit 7
     lsr                 ; Divide by 8
     lsr
+    tax 
+    lda facing_forward
+    bne calc_veg_cont
+    txa
+    clc
+    sbc #2 ; go back 3 characters because goat is facing backwards
     tax
+calc_veg_cont:
+;    tax
+
     rts
 
 
