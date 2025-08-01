@@ -17,6 +17,7 @@ float_right: .res 1
 tmp: .res 1
 goat_y_hi: .res 1
 goat_y_lo: .res 1
+facing_forward: .res 1
 
 
 .segment "CODE"
@@ -73,6 +74,26 @@ copy_sprite_2_loop:
     inx
     cpx #63
     bcc copy_sprite_2_loop
+
+    ; Copy third sprite
+    ldx #0
+copy_sprite_3_loop:
+     
+    lda munch,x
+    sta $2080,x
+    inx
+    cpx #63
+    bcc copy_sprite_3_loop
+
+    ; Copy fourth sprite
+    ldx #0
+copy_sprite_4_loop:
+     
+    lda munch_rev,x
+    sta $20C0,x
+    inx
+    cpx #63
+    bcc copy_sprite_4_loop
 
     ; Enable sprite 0
     lda #$01
@@ -161,6 +182,10 @@ main_loop:
     lda joystick
     and #%00001000   ; right
     beq brch_move_right
+    
+    lda joystick
+    and #%00000010   ; down
+    beq brch_munch
 
     jmp fall
     
@@ -170,7 +195,16 @@ brch_move_right:
     jmp move_right    
 brch_fall:
     jmp apply_horz_movement
-   
+brch_munch:
+    ; determine if facing left or right
+    lda facing_forward 
+    ; if right, jump to munch right
+    cmp #1
+    beq br_munch_right
+    ; if left, jump to munch left 
+    jmp munch_left
+br_munch_right:
+    jmp munch_right
 update:
     lda goat_x
     sta goat_sprite_x
@@ -382,12 +416,26 @@ reverse_goat:
     ; Set sprite pointer in $07F8 (sprite 0)
     lda #$81
     sta $07f8
+    lda #0
+    sta facing_forward
     rts
 forward_goat:
     ; Set sprite pointer in $07F8 (sprite 0)
     lda #$80
     sta $07f8
+    lda #1
+    sta facing_forward
     rts
+
+munch_left:
+    lda #$83
+    sta $07f8
+
+munch_right:    
+    lda #$82
+    sta $07f8
+    
+    
 delay:
     ldx #$ff
 wait1:
