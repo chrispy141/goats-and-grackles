@@ -32,9 +32,12 @@ GRAVITY_LO = $a0  ; try $01, $02, or $04 for different effects
 _start:
     sei                   ; Disable interrupts during setup
     ; initialze variables
-    lda #120
-    sta goat_x
+    lda #220
     sta goat_y_hi
+    lda #0
+    sta goat_y_lo
+    lda #50
+    sta goat_x
     
 ;clear screen loop
     ldx #$00
@@ -76,11 +79,6 @@ copy_sprite_2_loop:
     sta $d015
 
 initialize_sprite:
-    ; Set sprite 0 X/Y position
-    lda goat_x
-    sta goat_sprite_x
-    lda goat_y_hi
-    sta goat_sprite_y
 
     ; Set sprite color (gray)
     jsr goat_gray
@@ -97,31 +95,55 @@ CHAR_VEG      = $D8        ; PETSCII code for '*'
 COLOR_BROWN   = $09        ; Brown (C64 color code)
 COLOR_GREEN   = $05        ; Green (C64 color code)
 
-        ldx #0
+    ldx #0
 
 ; Fill last row (row 24) with DIRT ('-')
-        ldy #0
+    ldy #0
 @dirt_loop:
-        lda #CHAR_DIRT
-        sta SCREEN + 24*40,y
-        lda #COLOR_BROWN
-        sta COLOR_RAM + 24*40,y
-        iny
-        cpy #40
-        bne @dirt_loop
+    lda #CHAR_DIRT
+    sta SCREEN + 24*40,y
+    lda #COLOR_BROWN
+    sta COLOR_RAM + 24*40,y
+    iny
+    cpy #40
+    bne @dirt_loop
 
 ; Fill row above last (row 23) with VEGETATION ('*')
-        ldy #0
+    ldy #0
 @veg_loop:
-        lda #CHAR_VEG
-        sta SCREEN + 23*40,y
-        lda #COLOR_GREEN
-        sta COLOR_RAM + 23*40,y
-        iny
-        cpy #40
-        bne @veg_loop
+    lda #CHAR_VEG
+    sta SCREEN + 23*40,y
+    lda #COLOR_GREEN
+    sta COLOR_RAM + 23*40,y
+    iny
+    cpy #40
+    bne @veg_loop
 
-        jmp main_loop
+arrival:
+    lda #0
+    sta goat_x
+    sta goat_sprite_x
+    lda #220
+    sta goat_y_hi
+    sta goat_sprite_y
+    lda #0
+    sta goat_y_lo
+    ldx #0
+    jsr delay
+arrival_loop:
+    lda goat_x 
+    clc
+    adc #01 
+    sta goat_x
+    sta goat_sprite_x
+    txa         ; Transfer X to A
+    pha         ; Push A onto stack
+    jsr delay   
+    pla         ; Pull from stack back to A
+    tax         ; Transfer A back to X 
+    inx
+    cpx #50
+    bne arrival_loop
 
 main_loop:
     lda joystick
