@@ -203,6 +203,16 @@ not_on_ground:
     jmp apply_horz_movement
 
 move_left:
+    jsr move_left_inc
+    lda float_left
+    cmp #1
+    beq move_left_jmp 
+    jmp fall
+move_left_jmp:
+    jsr move_left_inc
+    jsr move_left_inc
+    jmp fall
+move_left_inc:
     ;if in high range
     lda SPRITE_HIGH_BITS ; >= 50 check to see if high bit is set
     and #GOAT_SPRITE_HIGH_BIT
@@ -233,7 +243,7 @@ dec_x:
     sec
     sbc #1
     sta goat_x 
-    jmp fall
+    rts
 move_right:
     lda goat_x
     cmp #65  ;check to see if greater than 50
