@@ -1,5 +1,3 @@
-; Fix for goat getting stuck when jumping near left edge
-
 .segment "EXEHDR"
     .word next_line
     .word 10
@@ -9,31 +7,29 @@ next_line:
     .word 0
 
 .segment "ZEROPAGE"
-goat_x: .res 1
-verticalSpeed_lo: .res 1  ; somewhere in zero page
-verticalSpeed_hi: .res 1  ; somewhere in zero page
-float_left: .res 1
-float_right: .res 1
+var_goat_x: .res 1
+var_vert_speed_lo: .res 1  ; somewhere in zero page
+var_vert_speed_hi: .res 1  ; somewhere in zero page
+var_float_left: .res 1
+var_float_right: .res 1
 tmp: .res 1
 goat_y_hi: .res 1
 goat_y_lo: .res 1
 facing_forward: .res 1
 .segment "BSS"       ; Or .segment "DATA" if using KickAssembler
 
-
-
-
 .segment "CODE"
 .export _start
-goat_sprite_x = $d000
-goat_sprite_y = $d001
-joystick = $dc00
+; ; Constants
+PTR_GOAT_SPRITE_X = $d000
+PTR_GOAT_SPRITE_Y = $d001
+PTR_JOYSTICK = $dc00
 SPRITE_HIGH_BITS = $d010
 GOAT_SPRITE_HIGH_BIT = $1
 GRAVITY_HI = $00
 GRAVITY_LO = $a0  ; try $01, $02, or $04 for different effects
-veg_hardiness = 64 
-veg_state = $1fd8 ; tracks how much each vegitation character has been munched.
+VEG_HARDINESS = 64 
+ARRAY_VEG_STATE = $1fd8 ; tracks how much each vegitation character has been munched.
 COLOR_BLUE = $06
 _start:
     sei                   ; Disable interrupts during setup
@@ -43,7 +39,7 @@ _start:
     lda #0
     sta goat_y_lo
     lda #50
-    sta goat_x
+    sta var_goat_x
     
 ;clear screen loop
     ldx #$00
@@ -125,8 +121,8 @@ COLOR_GREEN   = $05        ; Green (C64 color code)
 
     ldx #0
 initialize_vegitation:
-    lda #veg_hardiness
-    sta veg_state,x
+    lda #VEG_HARDINESS
+    sta ARRAY_VEG_STATE,x
     inx
     cpx #40
     bne initialize_vegitation
@@ -147,11 +143,11 @@ initialize_vegitation:
     jsr draw_vegetation
 arrival:
     lda #0
-    sta goat_x
-    sta goat_sprite_x
+    sta var_goat_x
+    sta PTR_GOAT_SPRITE_X
     lda #220
     sta goat_y_hi
-    sta goat_sprite_y
+    sta PTR_GOAT_SPRITE_Y
     lda #0
     sta goat_y_lo
     ldx #0
@@ -159,11 +155,11 @@ arrival:
     sta facing_forward
     jsr delay
 arrival_loop:
-    lda goat_x 
+    lda var_goat_x 
     clc
     adc #01 
-    sta goat_x
-    sta goat_sprite_x
+    sta var_goat_x
+    sta PTR_GOAT_SPRITE_X
     txa         ; Transfer X to A
     pha         ; Push A onto stack
     jsr delay   
@@ -175,7 +171,7 @@ arrival_loop:
 
 main_loop:
     jsr draw_vegetation
-    lda joystick
+    lda PTR_JOYSTICK
     and #%00010000   ; fire button
     beq try_jump     ; if 0, button is pressed
 
@@ -183,15 +179,15 @@ main_loop:
     cmp #220   
     bcc brch_fall 
 
-    lda joystick
+    lda PTR_JOYSTICK
     and #%00000100   ; left
     beq brch_move_left
 
-    lda joystick
+    lda PTR_JOYSTICK
     and #%00001000   ; right
     beq brch_move_right
     
-    lda joystick
+    lda PTR_JOYSTICK
     and #%00000010   ; down
     beq brch_munch
 
@@ -228,11 +224,11 @@ brc_reverse_goat:
     jmp fall
 
 update:
-    lda goat_x
-    sta goat_sprite_x
+    lda var_goat_x
+    sta PTR_GOAT_SPRITE_X
  
     lda goat_y_hi
-    sta goat_sprite_y
+    sta PTR_GOAT_SPRITE_Y
     jsr delay
 
     jmp main_loop
@@ -247,29 +243,29 @@ try_jump:
 can_jump:
     ; On ground, perform jump!
     lda #$F8              ; -8 in two's complement (tune as needed)
-    sta verticalSpeed_hi
+    sta var_vert_speed_hi
     lda #0
-    sta verticalSpeed_lo
+    sta var_vert_speed_lo
     lda #219
     sta goat_y_hi
-    sta goat_sprite_y
+    sta PTR_GOAT_SPRITE_Y
     
-    lda joystick
+    lda PTR_JOYSTICK
     and #%00000100   ; left
-    beq set_hz_float_left
+    beq set_hz_var_float_left
 
-    lda joystick
+    lda PTR_JOYSTICK
     and #%00001000   ; right
-    beq set_hz_float_right
+    beq set_hz_var_float_right
     
-set_hz_float_left:
+set_hz_var_float_left:
     lda #1
-    sta float_left
+    sta var_float_left
     
     jmp fall
-set_hz_float_right:
+set_hz_var_float_right:
     lda #1
-    sta float_right
+    sta var_float_right
     jmp fall
 
 not_on_ground:
@@ -280,7 +276,7 @@ move_left:
     lda #0
     sta facing_forward
     jsr move_left_inc
-    lda float_left
+    lda var_float_left
     cmp #1
     beq move_left_jmp 
     jmp fall
@@ -295,7 +291,7 @@ move_left_inc:
     beq move_left_low_range ; high range not set, jump to low range
     jmp move_left_high_range
 move_left_low_range:
-    lda goat_x
+    lda var_goat_x
     cmp #25             ; compare to minimum X boundary (adjust 10 as needed)
     bcc skip_x_dec      ; if less than 25, skip decrement but continue execution
     jmp dec_x
@@ -304,7 +300,7 @@ skip_x_dec:
 
 move_left_high_range:
     ; check if low range is zero
-    lda goat_x
+    lda var_goat_x
     cmp #$0
     beq transition_to_low_range_x
     ; low range is not zero, decrement and continue
@@ -317,16 +313,16 @@ transition_to_low_range_x:
     jmp dec_x
 dec_x:
     jsr reverse_goat
-    lda goat_x
+    lda var_goat_x
     sec
     sbc #1
-    sta goat_x 
+    sta var_goat_x 
     rts
 move_right:
     lda #1
     sta facing_forward
     jsr move_right_inc
-    lda float_right
+    lda var_float_right
     cmp #1
     beq move_right_jmp 
     jmp fall
@@ -335,7 +331,7 @@ move_right_jmp:
     jsr move_right_inc
     jmp fall
 move_right_inc:
-    lda goat_x
+    lda var_goat_x
     cmp #65  ;check to see if greater than 50
     bcc inc_x ; less than 50, safe to increment in all cases
     lda SPRITE_HIGH_BITS ; >= 50 check to see if high bit is set
@@ -344,7 +340,7 @@ move_right_inc:
     ; high bit is set, and x >= 50, don't do anything, go back to update
     jmp fall
 move_right_low_range:
-    lda goat_x
+    lda var_goat_x
     cmp #255 ; see if current x value is 255
     bcc inc_x  ; if x < 255, skip to increment`
     lda SPRITE_HIGH_BITS
@@ -354,10 +350,10 @@ move_right_low_range:
     
 inc_x:
     jsr forward_goat
-    lda goat_x
+    lda var_goat_x
     clc
     adc #01
-    sta goat_x
+    sta var_goat_x
     rts
 
 experiance_gravity:
@@ -366,45 +362,45 @@ experiance_gravity:
     bcs on_ground
     clc
 
-    lda verticalSpeed_lo
+    lda var_vert_speed_lo
     adc #GRAVITY_LO
-    sta verticalSpeed_lo
+    sta var_vert_speed_lo
 
-    lda verticalSpeed_hi
+    lda var_vert_speed_hi
     adc #GRAVITY_HI
-    sta verticalSpeed_hi
+    sta var_vert_speed_hi
     
-    lda verticalSpeed_hi
+    lda var_vert_speed_hi
     bmi not_terminal_veloicty
     cmp #4
     bcc not_terminal_veloicty
     lda #4      ; clamp to terminal velocity
-    sta verticalSpeed_hi
+    sta var_vert_speed_hi
 not_terminal_veloicty:
     rts
 
 on_ground:
     lda #0
-    sta verticalSpeed_hi
-    sta verticalSpeed_lo
+    sta var_vert_speed_hi
+    sta var_vert_speed_lo
     lda #220
     sta goat_y_hi
     lda #0
-    sta float_left
-    sta float_right
+    sta var_float_left
+    sta var_float_right
     jmp update
 apply_horz_movement:
-    lda float_left
+    lda var_float_left
     cmp #01
-    beq apply_float_left
-    lda float_right
+    beq apply_var_float_left
+    lda var_float_right
     cmp #01
-    beq apply_float_right
+    beq apply_var_float_right
     jmp fall
     
-apply_float_left:
+apply_var_float_left:
     jmp move_left
-apply_float_right:
+apply_var_float_right:
     jmp move_right
 
 fall:
@@ -413,11 +409,11 @@ fall:
    clc
    
    lda goat_y_lo
-   adc verticalSpeed_lo
+   adc var_vert_speed_lo
    sta goat_y_lo
 
    lda goat_y_hi
-   adc verticalSpeed_hi
+   adc var_vert_speed_hi
    sta goat_y_hi
 
    ldy goat_y_hi
@@ -429,10 +425,10 @@ landing:
    lda #220      ; Make sure we're exactly at ground level
    sta goat_y_hi
    lda #0        ; Reset vertical speed
-   sta verticalSpeed_hi
-   sta verticalSpeed_lo
-   sta float_left
-   sta float_right
+   sta var_vert_speed_hi
+   sta var_vert_speed_lo
+   sta var_float_left
+   sta var_float_right
    jmp update
 
 reverse_goat:
@@ -450,22 +446,22 @@ munch_left:
     lda #$83
     sta $07f8          ; Set sprite pointer? (Your code does this first)
     jsr calc_veg_index ; X = vegetation index
-    lda veg_state,x
+    lda ARRAY_VEG_STATE,x
     beq munch_done           ; If already 0, skip
     sec
     sbc #1             ; Subtract 1
-    sta veg_state,x
+    sta ARRAY_VEG_STATE,x
     
     jmp fall
 munch_right:    
     lda #$82
     sta $07f8
     jsr calc_veg_index
-    lda veg_state,x
+    lda ARRAY_VEG_STATE,x
     beq munch_done
     sec
     sbc #1
-    sta veg_state,x
+    sta ARRAY_VEG_STATE,x
     jmp fall
     
 munch_done:
@@ -483,7 +479,7 @@ calc_veg_index:
     lda SPRITE_HIGH_BITS           ; Read MSB register
     and #%00000001      ; Isolate bit for sprite 0
     lsr                 ; Move bit into carry
-    lda goat_x           ; Low 8 bits of sprite X
+    lda var_goat_x           ; Low 8 bits of sprite X
     ror                 ; Rotate carry into bit 7
     lsr                 ; Divide by 8
     lsr
@@ -505,13 +501,13 @@ calc_veg_cont:
     sta $d021         ; Set global background color to blue
 
 draw_vegetation:
-    lda #veg_hardiness
-    lsr               ; veg_hardiness / 2
+    lda #VEG_HARDINESS
+    lsr               ; VEG_HARDINESS / 2
     sta threshold
 
     ldx #0
 @veg_loop:
-    lda veg_state,x
+    lda ARRAY_VEG_STATE,x
     beq @clear_char           ; If zero, clear cell
 
     cmp threshold
