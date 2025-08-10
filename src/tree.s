@@ -2,6 +2,7 @@ SCREEN_RAM   = $0400
 CHAR_TO_DRAW = $2A    ; PETSCII '*'
 SCREEN_WIDTH = 40
 
+
 DrawPoints:
     ; Load base address of tree_points into tree_ptr
     LDA #<tree_points
@@ -37,60 +38,55 @@ DrawPoints_Loop:
     STA tempY
     INC index
 
-    ; Calculate Y*32 = Y * 2^5
-    LDA tempY
-    ASL A
-    ASL A
-    ASL A
-    ASL A
-    ASL A
-    STA tempMul32
-
-    ; Calculate Y*8 = Y * 2^3
-    LDA tempY
-    ASL A
-    ASL A
-    ASL A
-    STA tempMul8
-
-    ; tempOffset = Y*40 = Y*32 + Y*8
-    CLC
-    LDA tempMul32
-    ADC tempMul8
-    STA tempOffset      ; low byte
+    ; --- Multiply Y * 40 directly (16-bit)
     LDA #0
-    STA tempOffset+1    ; high byte (no carry expected here)
+    STA tempOffset      ; clear low
+    STA tempOffset+1    ; clear high
 
-    ; Add X coordinate
+    LDX #40             ; multiplier
+MulY40:
+    CLC
+    LDA tempOffset
+    ADC tempY
+    STA tempOffset
+    LDA tempOffset+1
+    ADC #0
+    STA tempOffset+1
+    DEX
+    BNE MulY40
+
+    ; --- Add X coordinate ---
     CLC
     LDA tempOffset
     ADC tempX
     STA tempOffset
+    LDA tempOffset+1
+    ADC #0
+    STA tempOffset+1
 
-    ; Calculate screen RAM address = SCREEN_RAM + tempOffset
-    LDA tempOffset
+    ; --- screen_ptr = SCREEN_RAM + tempOffset ---
     CLC
+    LDA tempOffset
     ADC #<SCREEN_RAM
     STA screen_ptr
     LDA tempOffset+1
     ADC #>SCREEN_RAM
     STA screen_ptr+1
 
-    ; Store character at (screen_ptr),Y=0
+    ; Put char on screen
     LDY #0
     LDA #CHAR_TO_DRAW
     STA (screen_ptr),Y
 
-    ; Calculate color RAM address = COLOR_RAM + tempOffset
-    LDA tempOffset
+    ; --- color_ptr = COLOR_RAM + tempOffset ---
     CLC
+    LDA tempOffset
     ADC #<COLOR_RAM
     STA color_ptr
     LDA tempOffset+1
     ADC #>COLOR_RAM
     STA color_ptr+1
 
-    ; Store color brown at (color_ptr),Y=0
     LDY #0
     LDA #COLOR_BROWN
     STA (color_ptr),Y
