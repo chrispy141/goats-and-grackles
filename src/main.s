@@ -16,6 +16,7 @@ tmp: .res 1
 goat_y_hi: .res 1
 goat_y_lo: .res 1
 facing_forward: .res 1
+.include "tree-zp.s"
 .segment "BSS"       ; Or .segment "DATA" if using KickAssembler
 
 .segment "CODE"
@@ -143,6 +144,10 @@ initialize_vegitation:
 
 ; Fill row above last (row 23) with VEGETATION 
     jsr draw_vegetation
+
+draw_tree:
+    jsr DrawPoints
+
 arrival:
     lda #0
     sta var_goat_x
@@ -588,6 +593,7 @@ goat_white:
     lda #$01
     sta $d027
     rts
+.include "tree.s"
 .segment "SPRITEDATA"
 goat:
 .include "sprites/goat_walk_right.inc"
@@ -597,3 +603,5 @@ munch:
 .include "sprites/goat_munch_right.inc"
 munch_rev:
 .include "sprites/goat_munch_left.inc"
+.segment "TREE"
+.include "objects/tree.inc"

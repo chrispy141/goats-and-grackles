@@ -30,3 +30,6 @@ run: $(TARGET)
 # Clean build artifacts
 clean:
 	rm -f $(OUTDIR)/*
+	
+tree:
+	python3 tools/treegen.py tools/tree.spm
