@@ -33,7 +33,10 @@ def spm_to_bytes(filename, config_path, out_path):
                 # Output 4 bytes: x, y, petscii char, color code
                 lines.append(f".byte {x_bin}, {y_bin}, {petscii_hex}, {color_hex}")
                 num_pts += 1
-
+                if num_pts > 63:
+                    print("Error: More than 63 points found, Unsupported tree size.")
+                    exit(1)
+    print(f"Generated {num_pts} points.")
     # Write output file
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     lines.insert(0, f".byte ${num_pts:02X}")  # Number of points

@@ -8,28 +8,30 @@ MAIN_SRC = src/main.s
 MAIN_OBJ = $(OUTDIR)/main.o
 EMU = x64
 
-# Default target
-all: $(TARGET)
+# Default target - build everything
+all: tree $(TARGET)
 
-# Build PRG by linking main object and library object
+# Build final linked PRG from object(s)
 $(TARGET): $(MAIN_OBJ) | $(OUTDIR)
-	$(CL65) -C $(CFG) -o $@ $(MAIN_OBJ) 
+	$(CL65) -C $(CFG) -o $@ $(MAIN_OBJ)
 
-# Assemble main.s into build/main.o
+# Assemble main.s to object file
 $(MAIN_OBJ): $(MAIN_SRC) | $(OUTDIR)
 	$(CA65) -o $@ $(MAIN_SRC)
 
-# Create build directory if missing
+# Run your tree generation script (generate assets, etc.)
+tree:
+	python3 tools/treegen.py tools/tree.spm tools/config.json
+
+# Create output dir if needed
 $(OUTDIR):
 	mkdir -p $(OUTDIR)
 
-# Run in VICE emulator
+# Clean: remove all build artifacts including objects and final binary
+clean:
+	rm -rf $(OUTDIR)/*
+	rm src/objects/tree.inc
+
+# Run emulator on the final PRG
 run: $(TARGET)
 	$(EMU) $(TARGET)
-
-# Clean build artifacts
-clean:
-	rm -f $(OUTDIR)/*
-	
-tree:
-	python3 tools/treegen.py tools/tree.spm

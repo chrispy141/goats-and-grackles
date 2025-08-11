@@ -1,8 +1,4 @@
 SCREEN_RAM   = $0400
-CHAR_TO_DRAW = $2A    ; PETSCII '*'
-SCREEN_WIDTH = 40
-
-
 DrawPoints:
     ; Load base address of tree_points into tree_ptr
     LDA #<tree_points
@@ -18,7 +14,7 @@ DrawPoints:
     LDA (tree_ptr),Y
     STA tempCount
 
-    ; Start reading pairs after the count byte
+    ; Start reading points after count byte
     LDA #1
     STA index
 
@@ -38,12 +34,27 @@ DrawPoints_Loop:
     STA tempY
     INC index
 
-    ; --- Multiply Y * 40 directly (16-bit)
-    LDA #0
-    STA tempOffset      ; clear low
-    STA tempOffset+1    ; clear high
+    ; Load PETSCII character
+    LDY index
+    LDA (tree_ptr),Y
+    STA tempChar
+    INC index
 
-    LDX #40             ; multiplier
+    ; Load Color code
+    LDY index
+    LDA (tree_ptr),Y
+    STA tempColor
+    INC index
+
+    ; Multiply Y * 40 (16-bit) = Y*40 to get screen offset
+
+    ; Clear tempOffset (16-bit)
+    LDA #0
+    STA tempOffset
+    STA tempOffset+1
+
+    ; 16-bit multiply tempY * 40
+    LDX #40
 MulY40:
     CLC
     LDA tempOffset
@@ -55,7 +66,7 @@ MulY40:
     DEX
     BNE MulY40
 
-    ; --- Add X coordinate ---
+    ; Add X to offset
     CLC
     LDA tempOffset
     ADC tempX
@@ -64,31 +75,32 @@ MulY40:
     ADC #0
     STA tempOffset+1
 
-    ; --- screen_ptr = SCREEN_RAM + tempOffset ---
+    ; Calculate screen RAM address = SCREEN_RAM + tempOffset
     CLC
     LDA tempOffset
-    ADC #<SCREEN_RAM
+    ADC #$00         ; low byte of SCREEN_RAM ($0400)
     STA screen_ptr
     LDA tempOffset+1
-    ADC #>SCREEN_RAM
+    ADC #$04         ; high byte of SCREEN_RAM ($0400)
     STA screen_ptr+1
 
-    ; Put char on screen
+    ; Write character at screen_ptr
     LDY #0
-    LDA #CHAR_TO_DRAW
+    LDA tempChar
     STA (screen_ptr),Y
 
-    ; --- color_ptr = COLOR_RAM + tempOffset ---
+    ; Calculate color RAM address = COLOR_RAM + tempOffset
     CLC
     LDA tempOffset
-    ADC #<COLOR_RAM
+    ADC #$00         ; low byte of COLOR_RAM ($D800)
     STA color_ptr
     LDA tempOffset+1
-    ADC #>COLOR_RAM
+    ADC #$D8         ; high byte of COLOR_RAM ($D800)
     STA color_ptr+1
 
+    ; Write color at color_ptr
     LDY #0
-    LDA #COLOR_BROWN
+    LDA tempColor
     STA (color_ptr),Y
 
     DEC tempCount
