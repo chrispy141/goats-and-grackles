@@ -60,44 +60,7 @@ clear_loop:
     lda #COLOR_BLUE
     sta $d021
 
-    ; Copy sprite data to $2000 for VIC-II
-    ldx #0
-copy_sprite_loop:
-    lda goat,x
-    sta $2000,x
-    inx
-    cpx #63
-    bcc copy_sprite_loop
-
-    ; Copy second sprite
-    ldx #0
-copy_sprite_2_loop:
-     
-    lda goat_rev,x
-    sta $2040,x
-    inx
-    cpx #63
-    bcc copy_sprite_2_loop
-
-    ; Copy third sprite
-    ldx #0
-copy_sprite_3_loop:
-     
-    lda munch,x
-    sta $2080,x
-    inx
-    cpx #63
-    bcc copy_sprite_3_loop
-
-    ; Copy fourth sprite
-    ldx #0
-copy_sprite_4_loop:
-     
-    lda munch_rev,x
-    sta $20C0,x
-    inx
-    cpx #63
-    bcc copy_sprite_4_loop
+.include "sprite_copy.inc"
 
     ; Enable sprite 0
     lda #$01
@@ -595,13 +558,17 @@ goat_white:
     rts
 .include "tree.s"
 .segment "SPRITEDATA"
-goat:
 .include "sprites/goat_walk_right.inc"
-goat_rev:
 .include "sprites/goat_walk_left.inc"
-munch:
 .include "sprites/goat_munch_right.inc"
-munch_rev:
 .include "sprites/goat_munch_left.inc"
+
+.include "sprites/grac_fly_left_up.inc"
+.include "sprites/grac_fly_left_down.inc"
+.include "sprites/grac_fly_right_up.inc"
+.include "sprites/grac_fly_right_down.inc"
+.include "sprites/grac_sit_left.inc"
+.include "sprites/grac_sit_right.inc"
+
 .segment "TREE"
 .include "objects/tree.inc"
