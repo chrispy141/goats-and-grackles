@@ -1,6 +1,8 @@
 tree_ptr:      .res 2
-index:         .res 1
+index_lo:      .res 1
+index_hi:      .res 1
 tempCount:     .res 1
+temp_ptr:      .res 2
 tempX:         .res 1
 tempY:         .res 1
 tempChar:      .res 1
@@ -9,4 +11,4 @@ tempOffset:    .res 2
 screen_ptr:    .res 2
 color_ptr:     .res 2
 debug_count:   .res 1
-tempPtr:       .res 2
+tempPtr:      .res 2

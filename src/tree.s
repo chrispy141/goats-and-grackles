@@ -1,3 +1,4 @@
+
 SCREEN_RAM   = $0400
 DrawPoints:
     ; Load base address of tree_points into tree_ptr
@@ -6,45 +7,80 @@ DrawPoints:
     LDA #>tree_points
     STA tree_ptr+1
 
+    ; 16-bit index for reading points
+    LDA #1
+    STA index_lo
     LDA #0
-    STA index
+    STA index_hi
 
     ; Load number of points from tree_points[0]
     LDY #0
     LDA (tree_ptr),Y
     STA tempCount
+    JMP DrawPoints_Loop
 
-    ; Start reading points after count byte
-    LDA #1
-    STA index
-
+DrawPoints_Done:
+    RTS
 DrawPoints_Loop:
     LDA tempCount
     BEQ DrawPoints_Done
 
+    ; Calculate full address for each access: tree_points + index_lo + 256*index_hi
+    LDA #<tree_points
+    CLC
+    ADC index_lo
+    STA temp_ptr
+    LDA #>tree_points
+    ADC index_hi
+    STA temp_ptr+1
+
     ; Load X coordinate
-    LDY index
-    LDA (tree_ptr),Y
+    LDY #0
+    LDA (temp_ptr),Y
     STA tempX
-    INC index
+    JSR IncIndex
+
+    LDA #<tree_points
+    CLC
+    ADC index_lo
+    STA temp_ptr
+    LDA #>tree_points
+    ADC index_hi
+    STA temp_ptr+1
 
     ; Load Y coordinate
-    LDY index
-    LDA (tree_ptr),Y
+    LDY #0
+    LDA (temp_ptr),Y
     STA tempY
-    INC index
+    JSR IncIndex
+
+    LDA #<tree_points
+    CLC
+    ADC index_lo
+    STA temp_ptr
+    LDA #>tree_points
+    ADC index_hi
+    STA temp_ptr+1
 
     ; Load PETSCII character
-    LDY index
-    LDA (tree_ptr),Y
+    LDY #0
+    LDA (temp_ptr),Y
     STA tempChar
-    INC index
+    JSR IncIndex
+
+    LDA #<tree_points
+    CLC
+    ADC index_lo
+    STA temp_ptr
+    LDA #>tree_points
+    ADC index_hi
+    STA temp_ptr+1
 
     ; Load Color code
-    LDY index
-    LDA (tree_ptr),Y
+    LDY #0
+    LDA (temp_ptr),Y
     STA tempColor
-    INC index
+    JSR IncIndex
 
     ; Multiply Y * 40 (16-bit) = Y*40 to get screen offset
 
@@ -106,5 +142,13 @@ MulY40:
     DEC tempCount
     JMP DrawPoints_Loop
 
-DrawPoints_Done:
+
+; 16-bit index increment subroutine
+IncIndex:
+    INC index_lo
+    LDA index_lo
+    CMP #0
+    BNE IncIndex_Done
+    INC index_hi
+IncIndex_Done:
     RTS

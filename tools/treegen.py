@@ -15,7 +15,7 @@ def spm_to_bytes(filename, config_path, out_path):
     pixels = sprite['pixels']
 
     lines = []
-    num_pts = 0
+    num_pts = 1
     for y, row in enumerate(pixels):
         for x, pixel in enumerate(row):
             # Expect pixel to be a character key in config or zero/empty
@@ -33,8 +33,8 @@ def spm_to_bytes(filename, config_path, out_path):
                 # Output 4 bytes: x, y, petscii char, color code
                 lines.append(f".byte {x_bin}, {y_bin}, {petscii_hex}, {color_hex}")
                 num_pts += 1
-                if num_pts > 63:
-                    print("Error: More than 63 points found, Unsupported tree size.")
+                if num_pts > 255:
+                    print("Error: More than 255 points found, Unsupported tree size.")
                     exit(1)
     print(f"Generated {num_pts} points.")
     # Write output file
